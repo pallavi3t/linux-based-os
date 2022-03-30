@@ -1,0 +1,87 @@
+BUG LOG
+
+
+--Checkpoint 1--
+BUG Issues with IDT Initialization
+First we realized that the idt initialization was not called in kernel
+Then, we were getting wrong Exceptions thrown. This was fixed by going through
+idt_init and fixing some of the wrong values. Finally, we had to go through
+our test cases and fix minor issues as well as play around with allowing interrupt
+and initializing rtc and keyboard.
+
+Bug issues with paging initialization
+Testing paging kept saying PG disabled and boot looping
+Needed to adjust our page table and page directory initialization
+Had to adjust addresses and lower bits for the page table and page directory structures
+Had to also adjust assembly code to get bits in proper registers
+
+Bug issues with keyboard and rtc not showing up
+When testing keyboard and rtc, the supposed action in devel wouldn't happen
+Needed to adjust our PIC and minor changes to keyboard and rtc logic
+
+
+--Checkpoint 2--
+Bug issues with keyboard with special characters
+Nothing was printing, had to make changes to where putc statements were.
+Also had to add inb() function to keyboard handler in order to read that new key press.
+
+Bug issues with RTC
+initially disabled interrupts in close, recommended that we always keep it enabled. In addition if we disable it in close but call open again we only enable this in the init and not in open so the interrupt wont be sent again
+
+Bug issues with file system giving a page fault
+Had to adjust logic with addresses and offsets 
+
+Bug issues with file system test case not printing anything
+Had to adjust logic with addresses and making sure that we passed in the address of a dentry instead of a pointer
+
+
+--Checkpoint 3--
+Page fault with execute
+When debugging the user program, we were receiving a page fault exception 
+Had to change our esp pointer since it was not pointing to the address to beginning of the user program address
+and also had to change our interrupt handler to call our system_call_handler
+
+page fault with open 
+Did not initialize our pcb becuase we were supposed to in execute so we made a function to set it up 
+and called that in our open function 
+
+page fault with read 
+returning -1 because our flag was set to 0 even though in open we set it to 1 but then we realized in our tests 
+we called read and write after we closed the file which is what set the flag to 0
+
+
+--Checkpoint 4--
+General protection and page fault with execute
+Needed to modify our iret stack to contain the proper values that were needed 
+Needed to have a call instead of jmp with our jmp table so that we went back to the handler after the function was completed 
+
+Arguments that were pushed on stack for handler were off by 1
+Had to remove pushing the flags and pushing all registers - only pushed certain registers onto stack (did not want to push eax since that would be changed)
+
+ls was continuously outputting shell 
+Had to modify read_directory so that it used a global variable instead of the fd value to output the name of the file until the end was reached 
+
+cat frame0.txt was infinitly printing out the fish
+Had to modify our file_read file and ensure that the buffer that was passed in was valid 
+
+Parsing command and arguments was not correctly skipping over spaces and causing page fault
+Had to change variables to be what they should be when going through loops and checking
+Had to move some of the logic around to later parts in the code such as when we add our argument buffer to our pcb 
+
+page faulting on halt 
+i was restoring the parents esp and ebp instead of the childs so when it entered to tear down the stack we were not tearing down the curr processes stack when halting 
+
+Shell was restarting with every new process
+changed condition in which we call shell execute in halt to when the process number of parent equals that of the current. previously it was if current process number was less than or equal to 1 which it always would be
+
+--Checkpoint 5--
+Page faulting when trying to execute more than 2 commands
+Had to add logic for our pids to either be 0 or 1 for our memory mapping as the virtual addresses should only be mapped to 8MB or 12MB
+
+Terminal has green background, and when trying to switch, weird characters appear and characters on screen shift
+Had to fix storing correct address for video_memory for each terminal. Was storing index for page table, rather than actual address
+
+Page faults when switching between terminals
+Added logic in our execute for the PCB to handle the multiple shells
+
+
